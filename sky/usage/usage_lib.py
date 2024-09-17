@@ -6,13 +6,13 @@ import enum
 import inspect
 import json
 import os
-import posthog
 import time
 import traceback
 import typing
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import click
+import posthog
 import requests
 
 import sky
@@ -28,10 +28,8 @@ if typing.TYPE_CHECKING:
     from sky import task as task_lib
 
 logger = sky_logging.init_logger(__name__)
-posthog_client = posthog.Posthog(
-    constants.POSTHOG_API_KEY,
-    constants.POSTHOG_HOST
-)
+posthog_client = posthog.Posthog(constants.POSTHOG_API_KEY,
+                                 constants.POSTHOG_HOST)
 
 
 def _get_current_timestamp_ns() -> int:
@@ -325,16 +323,11 @@ def _send_to_loki(message_type: MessageType):
                              data=payload,
                              headers=headers,
                              timeout=0.5)
-    posthog_client.capture(
-        common_utils.get_user_hash(),
-        'trainy-sky-event',
-        {   
-            **prom_labels,
-            **json.loads(str(message)),
-            'timestamp': str(log_timestamp)
-        }
-    )
-    
+    posthog_client.capture(common_utils.get_user_hash(), 'trainy-sky-event', {
+        **prom_labels,
+        **json.loads(str(message)), 'timestamp': str(log_timestamp)
+    })
+
     if response.status_code != 204:
         logger.debug(
             f'Grafana Loki failed with response: {response.text}\n{payload}')
