@@ -156,6 +156,7 @@ install_requires = [
     "typing_extensions",
     'filelock >= 3.6.0',
     'packaging',
+    'posthog',
     'psutil',
     'pulp',
     # Cython 3.0 release breaks PyYAML 5.4.* (https://github.com/yaml/pyyaml/issues/601)
