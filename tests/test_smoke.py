@@ -2143,7 +2143,7 @@ def test_kueue_labels_kubernetes():
         f'sky down -y {name}; kubectl delete --ignore-not-found -f tests/kubernetes/kueue-single-clusterqueue.yaml; kubectl delete --ignore-not-found -f tests/kubernetes/kueue-manifest.yaml',
     )
 
-    
+
 # ---------- Pod Annotations on Kubernetes ----------
 @pytest.mark.kubernetes
 def test_add_pod_annotations_for_autodown_with_launch():
