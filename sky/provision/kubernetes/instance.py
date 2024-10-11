@@ -672,6 +672,7 @@ def _create_pods(region: str, cluster_name_on_cloud: str,
                     }
                 }]
             }
+        }
 
         pod = _create_namespaced_pod_with_retries(namespace, pod_spec, context)
         created_pods[pod.metadata.name] = pod
