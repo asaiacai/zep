@@ -657,9 +657,9 @@ def _terminate_node(namespace: str, context: Optional[str],
         kubernetes_utils.clean_zombie_ssh_jump_pod(namespace, context, pod_name)
     except Exception as e:  # pylint: disable=broad-except
         logger.warning('terminate_instances: Error occurred when analyzing '
-                       f'SSH Jump pod: {e}')   
+                       f'SSH Jump pod: {e}')
     try:
-        
+
         kubernetes.core_api(context).delete_namespaced_service(
             pod_name, namespace, _request_timeout=config_lib.DELETION_TIMEOUT)
         kubernetes.core_api(context).delete_namespaced_service(
