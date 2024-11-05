@@ -3,7 +3,6 @@ import copy
 import json
 import time
 from typing import Any, Callable, Dict, List, Optional
-import uuid
 
 from sky import exceptions
 from sky import sky_logging
