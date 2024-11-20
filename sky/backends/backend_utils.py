@@ -885,7 +885,7 @@ def write_cluster_config(
     config_dict['ray'] = yaml_path
 
     # Add kubernetes config fields from ~/.sky/config
-    if isinstance(cloud, clouds.Kubernetes):
+    if isinstance(cloud, (clouds.Kubernetes, clouds.Jobset)):
         kubernetes_utils.combine_pod_config_fields(
             tmp_yaml_path,
             cluster_config_overrides=to_provision.cluster_config_overrides)
@@ -953,7 +953,7 @@ def _add_auth_to_cluster_config(cloud: clouds.Cloud, cluster_config_file: str):
         config = auth.setup_gcp_authentication(config)
     elif isinstance(cloud, clouds.Lambda):
         config = auth.setup_lambda_authentication(config)
-    elif isinstance(cloud, clouds.Kubernetes):
+    elif isinstance(cloud, (clouds.Kubernetes, clouds.Jobset)):
         config = auth.setup_kubernetes_authentication(config)
     elif isinstance(cloud, clouds.IBM):
         config = auth.setup_ibm_authentication(config)
@@ -1524,7 +1524,7 @@ def check_owner_identity(cluster_name: str) -> None:
             err_msg = f'the activated identity is {user_identities[0]!r}.'
         else:
             err_msg = (f'available identities are {user_identities!r}.')
-        if cloud.is_same_cloud(clouds.Kubernetes()):
+        if cloud.is_same_cloud(clouds.Kubernetes()) or cloud.is_same_cloud(clouds.Jobset()):
             err_msg += (' Check your kubeconfig file and make sure the '
                         'correct context is available.')
         with ux_utils.print_exception_no_traceback():
@@ -2770,7 +2770,8 @@ def get_endpoints(cluster: str,
             error_msg = (f'Port {port} not exposed yet. '
                          f'{_ENDPOINTS_RETRY_MESSAGE} ')
             if handle.launched_resources.cloud.is_same_cloud(
-                    clouds.Kubernetes()):
+                    clouds.Kubernetes()) or handle.launched_resources.cloud.is_same_cloud(
+                    clouds.Jobset()):
                 # Add Kubernetes specific debugging info
                 error_msg += (kubernetes_utils.get_endpoint_debug_message())
             logger.warning(error_msg)
@@ -2789,7 +2790,8 @@ def get_endpoints(cluster: str,
                 error_msg = (f'No endpoints exposed yet. '
                              f'{_ENDPOINTS_RETRY_MESSAGE} ')
                 if handle.launched_resources.cloud.is_same_cloud(
-                        clouds.Kubernetes()):
+                        clouds.Kubernetes()) or handle.launched_resources.cloud.is_same_cloud(
+                        clouds.Jobset()):
                     # Add Kubernetes specific debugging info
                     error_msg += \
                         kubernetes_utils.get_endpoint_debug_message()

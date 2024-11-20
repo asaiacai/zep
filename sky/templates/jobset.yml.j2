@@ -1,0 +1,57 @@
+# Distributed training of a traditional CNN model to do image classification 
+# using the MNIST dataset and PyTorch.
+apiVersion: jobset.x-k8s.io/v1alpha2
+kind: JobSet
+metadata:
+  name: pytorch
+  labels:
+    kueue.x-k8s.io/queue-name: user-queue
+  annotations:
+    provreq.kueue.x-k8s.io/maxRunDurationSeconds: "1600"
+spec:
+  replicatedJobs:
+  - name: workers
+    template:
+      spec:
+        parallelism: 2
+        completions: 2
+        backoffLimit: 0
+        template:
+          spec:
+            nodeSelector:
+              cloud.google.com/gke-nodepool: a100-80gb-pool
+            tolerations:
+            - key: "nvidia.com/gpu"
+              operator: "Exists"
+            containers:
+            - name: pytorch
+              image: gcr.io/k8s-staging-jobset/pytorch-mnist:latest
+              resources:
+                limits:
+                  cpu: 50
+                  memory: 800G
+                  nvidia.com/gpu: 8
+                requests:
+                  cpu: 50
+                  memory: 800G
+                  nvidia.com/gpu: 8
+              ports:
+              - containerPort: 3389
+              env:
+              - name: MASTER_ADDR
+                value: "pytorch-workers-0-0.pytorch"
+              - name: MASTER_PORT
+                value: "3389"
+              - name: RANK
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+              # Force python to not buffer output and write directly to stdout, so we can view training logs via `kubectl logs`.
+              - name: PYTHONUNBUFFERED
+                value: "0"
+              command:
+              - bash
+              - -xc
+              - |
+                NCCL_DEBUG=INFO torchrun --rdzv_id=123 --nnodes=2 --nproc_per_node=8 --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK mnist.py --epochs=1 --log-interval=1
+                sleep 1600
