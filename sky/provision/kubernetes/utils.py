@@ -371,13 +371,49 @@ class KarpenterLabelFormatter(SkyPilotLabelFormatter):
     LABEL_KEY = 'karpenter.k8s.aws/instance-gpu-name'
 
 
+class NebiusLabelFormatter(GPULabelFormatter):
+    """Nebius label formatter
+    Nebius uses the label `node.kubernetes.io/instance-type` as the key,
+    and a lowercase accelerator str as the value.
+
+    ex. "node.kubernetes.io/instance-type=gpu-h100-sxm"
+    Nebius docs: https://docs.nebius.com/compute/virtual-machines/types/
+    """
+    LABEL_KEY = 'node.kubernetes.io/instance-type'
+    SUPPORTED_ACCELERATORS = ['H100']
+
+    @classmethod
+    def get_label_key(cls, accelerator: Optional[str] = None) -> str:
+        return cls.LABEL_KEY
+
+    @classmethod
+    def get_label_keys(cls) -> List[str]:
+        return [cls.LABEL_KEY]
+
+    @classmethod
+    def get_label_value(cls, accelerator: str) -> str:
+        if accelerator.upper() not in cls.SUPPORTED_ACCELERATORS:
+            raise ValueError(
+                f'Unsupported accelerator: {accelerator.upper()}. '
+                f'Supported accelerators are: {cls.SUPPORTED_ACCELERATORS}')
+        return 'gpu-h100-sxm'
+
+    @classmethod
+    def match_label_key(cls, label_key: str) -> bool:
+        return label_key == cls.LABEL_KEY
+
+    @classmethod
+    def get_accelerator_from_label_value(cls, value: str) -> str:
+        return 'H100'
+
+
 # LABEL_FORMATTER_REGISTRY stores the label formats SkyPilot will try to
 # discover the accelerator type from. The order of the list is important, as
 # it will be used to determine the priority of the label formats when
 # auto-detecting the GPU label type.
 LABEL_FORMATTER_REGISTRY = [
     SkyPilotLabelFormatter, GKELabelFormatter, KarpenterLabelFormatter,
-    GFDLabelFormatter, CoreWeaveLabelFormatter
+    GFDLabelFormatter, CoreWeaveLabelFormatter, NebiusLabelFormatter
 ]
 
 # Mapping of autoscaler type to label formatter
@@ -385,6 +421,7 @@ AUTOSCALER_TO_LABEL_FORMATTER = {
     kubernetes_enums.KubernetesAutoscalerType.GKE: GKELabelFormatter,
     kubernetes_enums.KubernetesAutoscalerType.KARPENTER: KarpenterLabelFormatter,  # pylint: disable=line-too-long
     kubernetes_enums.KubernetesAutoscalerType.GENERIC: SkyPilotLabelFormatter,
+    kubernetes_enums.KubernetesAutoscalerType.NEBIUS: NebiusLabelFormatter,
 }
 
 
