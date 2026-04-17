@@ -33,6 +33,39 @@ TAG_SKYPILOT_CLUSTER_NAME = 'skypilot-cluster-name'
 TAG_POD_INITIALIZED = 'skypilot-initialized'
 
 
+def _merge_spread_anti_affinity(pod_spec: Dict[str, Any],
+                                cluster_name_on_cloud: str) -> None:
+    """Append SkyPilot's worker-spread podAntiAffinity term in place.
+
+    Preserves any user-supplied nodeAffinity / podAffinity /
+    podAntiAffinity set via pod_config instead of overwriting
+    spec.affinity wholesale.
+    """
+    spread_term = {
+        'weight': 100,
+        'podAffinityTerm': {
+            'labelSelector': {
+                'matchExpressions': [{
+                    'key': TAG_SKYPILOT_CLUSTER_NAME,
+                    'operator': 'In',
+                    'values': [cluster_name_on_cloud]
+                }]
+            },
+            'topologyKey': 'kubernetes.io/hostname'
+        }
+    }
+    existing_affinity = pod_spec['spec'].get('affinity') or {}
+    anti_affinity = existing_affinity.get('podAntiAffinity') or {}
+    preferred_terms = list(
+        anti_affinity.get('preferredDuringSchedulingIgnoredDuringExecution') or
+        [])
+    preferred_terms.append(spread_term)
+    anti_affinity[
+        'preferredDuringSchedulingIgnoredDuringExecution'] = preferred_terms
+    existing_affinity['podAntiAffinity'] = anti_affinity
+    pod_spec['spec']['affinity'] = existing_affinity
+
+
 def _get_head_pod_name(pods: Dict[str, Any]) -> Optional[str]:
     head_pod_name = None
     for pod_name, pod in pods.items():
@@ -758,26 +791,9 @@ def _create_pods(region: str, cluster_name_on_cloud: str,
         # are not available, we still want to be able to schedule worker
         # pods on larger nodes which may be able to fit multiple SkyPilot
         # "nodes".
-        pod_spec_copy['spec']['affinity'] = {
-            'podAntiAffinity': {
-                # Set as a soft constraint
-                'preferredDuringSchedulingIgnoredDuringExecution': [{
-                    # Max weight to avoid scheduling on the
-                    # same physical node unless necessary.
-                    'weight': 100,
-                    'podAffinityTerm': {
-                        'labelSelector': {
-                            'matchExpressions': [{
-                                'key': TAG_SKYPILOT_CLUSTER_NAME,
-                                'operator': 'In',
-                                'values': [cluster_name_on_cloud]
-                            }]
-                        },
-                        'topologyKey': 'kubernetes.io/hostname'
-                    }
-                }]
-            }
-        }
+        # Merge into any user-supplied affinity (e.g. nodeAffinity from
+        # pod_config) rather than overwriting it.
+        _merge_spread_anti_affinity(pod_spec_copy, cluster_name_on_cloud)
 
         # TPU slice nodes are given a taint, google.com/tpu=present:NoSchedule.
         # This is to prevent from non-TPU workloads from being scheduled on TPU
