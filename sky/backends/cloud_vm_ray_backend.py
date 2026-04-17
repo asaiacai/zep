@@ -461,7 +461,7 @@ class RayCodeGen:
                 # skip the scheduling step.
                 job_lib.scheduler.schedule_step()
 
-                total_num_nodes = len(ray.nodes())
+                total_num_nodes = len([n for n in ray.nodes() if n.get('Alive', False)])
                 setup_bundles = [{{"CPU": _SETUP_CPUS}} for _ in range(total_num_nodes)]
                 setup_pg = ray.util.placement_group(setup_bundles, strategy='STRICT_SPREAD')
                 setup_workers = [run_bash_command_with_log \\
