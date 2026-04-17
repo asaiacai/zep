@@ -2,7 +2,6 @@
 
 from sky.provision.kubernetes import instance
 
-
 CLUSTER = 'my-cluster'
 
 
@@ -59,7 +58,9 @@ def test_merge_spread_anti_affinity_appends_to_existing_anti_affinity():
         'weight': 50,
         'podAffinityTerm': {
             'labelSelector': {
-                'matchLabels': {'app': 'other'},
+                'matchLabels': {
+                    'app': 'other'
+                },
             },
             'topologyKey': 'topology.kubernetes.io/zone',
         },

@@ -57,8 +57,8 @@ def _merge_spread_anti_affinity(pod_spec: Dict[str, Any],
     existing_affinity = pod_spec['spec'].get('affinity') or {}
     anti_affinity = existing_affinity.get('podAntiAffinity') or {}
     preferred_terms = list(
-        anti_affinity.get('preferredDuringSchedulingIgnoredDuringExecution')
-        or [])
+        anti_affinity.get('preferredDuringSchedulingIgnoredDuringExecution') or
+        [])
     preferred_terms.append(spread_term)
     anti_affinity[
         'preferredDuringSchedulingIgnoredDuringExecution'] = preferred_terms
