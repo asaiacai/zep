@@ -223,6 +223,43 @@ def test_valid_num_items_config(monkeypatch, tmp_path) -> None:
     _reload_config()
 
 
+def test_shared_konduktor_jobs_bucket_config(monkeypatch, tmp_path) -> None:
+    """Test that `jobs.bucket` is accepted so a config can be shared with konduktor."""
+    config_path = tmp_path / 'valid.yaml'
+    config_path.open('w', encoding='utf-8').write(
+        textwrap.dedent(f"""\
+        jobs:
+            bucket: gs://konduktor-filemounts
+            controller:
+                resources:
+                    cpus: 4+
+        """))
+    monkeypatch.setattr(skypilot_config, 'CONFIG_PATH', tmp_path / 'valid.yaml')
+    _reload_config()
+    # Accepted but unused by SkyPilot; the controller resources still resolve.
+    assert skypilot_config.get_nested(('jobs', 'bucket'),
+                                      None) == 'gs://konduktor-filemounts'
+    assert skypilot_config.get_nested(('jobs', 'controller', 'resources'),
+                                      None) == {
+                                          'cpus': '4+'
+                                      }
+
+
+def test_invalid_jobs_bucket_config(monkeypatch, tmp_path) -> None:
+    """Test that a non-object-store `jobs.bucket` is still rejected."""
+    config_path = tmp_path / 'invalid.yaml'
+    config_path.open('w', encoding='utf-8').write(
+        textwrap.dedent(f"""\
+        jobs:
+            bucket: /local/path
+        """))
+    monkeypatch.setattr(skypilot_config, 'CONFIG_PATH',
+                        tmp_path / 'invalid.yaml')
+    with pytest.raises(ValueError) as e:
+        _reload_config()
+    assert 'Invalid config YAML' in e.value.args[0]
+
+
 def test_config_get_set_nested(monkeypatch, tmp_path) -> None:
     """Test that set_nested(), get_nested() works."""
 

@@ -716,6 +716,23 @@ def get_config_schema():
             },
         }
     }
+    # `jobs` additionally accepts `bucket`, konduktor's shared bucket for
+    # file_mounts/workdir sync. SkyPilot ignores it, but accepting it lets a
+    # single config.yaml be shared between `SKYPILOT_CONFIG` and
+    # `KONDUKTOR_CONFIG` -- konduktor already prunes the skypilot-only
+    # `jobs.controller` from the same file.
+    jobs_configs = {
+        'type': 'object',
+        'required': [],
+        'additionalProperties': False,
+        'properties': {
+            **controller_resources_schema['properties'],
+            'bucket': {
+                'type': 'string',
+                'pattern': '^(gs|s3)://.+',
+            },
+        }
+    }
     cloud_configs = {
         'aws': {
             'type': 'object',
@@ -936,7 +953,7 @@ def get_config_schema():
         'required': [],
         'additionalProperties': False,
         'properties': {
-            'jobs': controller_resources_schema,
+            'jobs': jobs_configs,
             'spot': controller_resources_schema,
             'serve': controller_resources_schema,
             'allowed_clouds': allowed_clouds,
