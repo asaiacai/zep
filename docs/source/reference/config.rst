@@ -31,6 +31,12 @@ Available fields and semantics:
         cpus: 4+  # number of vCPUs, max concurrent spot jobs = 2 * cpus
         disk_size: 100
 
+    # Shared bucket for file_mounts/workdir sync (optional).
+    #
+    # Unused by SkyPilot; accepted so that a single config.yaml can be shared
+    # with konduktor, which reads this field. Supports {gs, s3} URLs.
+    bucket: gs://konduktor-filemounts
+
   # Allow list for clouds to be used in `sky check`
   #
   # This field is used to restrict the clouds that SkyPilot will check and use
